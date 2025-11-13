@@ -87,3 +87,4 @@ class StructureManager:
             "tables_names": [table.get("name", "N/A") for table in cls._current_structure.tables]
         }
 
+
