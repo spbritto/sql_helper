@@ -1,0 +1,4 @@
+"""
+Módulo Utils - Funções utilitárias
+"""
+

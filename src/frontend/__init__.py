@@ -1,0 +1,4 @@
+"""
+Módulo Frontend - Interface Streamlit
+"""
+
