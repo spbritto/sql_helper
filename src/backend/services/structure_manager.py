@@ -4,7 +4,7 @@ Gerenciador centralizado de estruturas de banco de dados
 from typing import Optional
 from loguru import logger
 
-from ..models import DatabaseStructure
+from src.backend.models import DatabaseStructure
 
 
 class StructureManager:

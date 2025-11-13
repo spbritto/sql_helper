@@ -4,9 +4,9 @@ Serviço para extração de estrutura de banco de dados
 from typing import Dict, Any
 from loguru import logger
 
-from ..models import DatabaseStructure
-from ...parsing.text_parser import TextParser
-from ...ocr.image_processor import ImageProcessor
+from src.backend.models import DatabaseStructure
+from src.parsing.text_parser import TextParser
+from src.ocr.image_processor import ImageProcessor
 
 
 class StructureExtractor:

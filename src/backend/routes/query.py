@@ -5,8 +5,8 @@ from fastapi import APIRouter, HTTPException
 from typing import List
 from loguru import logger
 
-from ..models import NaturalLanguageQuery, SQLQueryResponse, QueryHistory
-from ..services.query_generator import QueryGenerator
+from src.backend.models import NaturalLanguageQuery, SQLQueryResponse, QueryHistory
+from src.backend.services.query_generator import QueryGenerator
 
 router = APIRouter()
 query_generator = QueryGenerator()

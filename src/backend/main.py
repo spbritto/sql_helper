@@ -1,14 +1,23 @@
 """
 Ponto de entrada da API FastAPI
 """
+import sys
+from pathlib import Path
+
+# Adiciona o diretório raiz do projeto ao sys.path
+# Isso permite que os imports absolutos funcionem independente de como o script é executado
+project_root = Path(__file__).resolve().parent.parent.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import uvicorn
 from loguru import logger
 
-from .config import settings
-from .routes import query_router, structure_router, health_router
+from src.backend.config import settings
+from src.backend.routes import query_router, structure_router, health_router
 
 # Configuração de logs
 logger.add(

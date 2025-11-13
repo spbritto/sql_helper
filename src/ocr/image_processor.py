@@ -21,7 +21,7 @@ except ImportError:
     EASYOCR_AVAILABLE = False
     logger.warning("easyocr não instalado")
 
-from ..backend.config import settings
+from src.backend.config import settings
 
 
 class ImageProcessor:

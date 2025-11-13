@@ -3,8 +3,8 @@ Rotas de health check
 """
 from fastapi import APIRouter
 from datetime import datetime
-from ..models import HealthResponse
-from ..config import settings
+from src.backend.models import HealthResponse
+from src.backend.config import settings
 
 router = APIRouter()
 

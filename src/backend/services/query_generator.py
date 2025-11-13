@@ -13,9 +13,9 @@ try:
 except ImportError:
     from langchain.prompts import ChatPromptTemplate
 
-from ..config import settings
-from ..models import SQLQueryResponse, DatabaseStructure
-from .structure_manager import StructureManager
+from src.backend.config import settings
+from src.backend.models import SQLQueryResponse, DatabaseStructure
+from src.backend.services.structure_manager import StructureManager
 
 
 class QueryGenerator:

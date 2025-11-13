@@ -5,9 +5,9 @@ from fastapi import APIRouter, UploadFile, File, HTTPException
 from typing import List, Optional
 from loguru import logger
 
-from ..models import DatabaseStructure
-from ..services.structure_extractor import StructureExtractor
-from ..services.structure_manager import StructureManager
+from src.backend.models import DatabaseStructure
+from src.backend.services.structure_extractor import StructureExtractor
+from src.backend.services.structure_manager import StructureManager
 
 router = APIRouter()
 structure_extractor = StructureExtractor()
