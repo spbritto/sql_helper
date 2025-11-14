@@ -31,9 +31,159 @@ def upload_structure_page():
     """Página de upload de estrutura"""
     st.header("📊 Carregar Estrutura do Banco de Dados")
     
-    tab1, tab2 = st.tabs(["📝 Texto", "🖼️ Imagem"])
+    tab1, tab2, tab3 = st.tabs(["🔌 Conectar Banco", "📝 Texto", "🖼️ Imagem"])
     
+    # TAB 1: Conectar ao PostgreSQL no Docker
     with tab1:
+        st.subheader("Conectar ao PostgreSQL no Docker")
+        st.info("🐳 Conecte-se automaticamente ao PostgreSQL rodando no Docker e escolha qual base deseja usar")
+        
+        # Status de conexão com Docker
+        try:
+            with st.spinner("Testando conexão com Docker PostgreSQL..."):
+                response = requests.get(
+                    f"{API_URL}/api/docker/test-connection",
+                    timeout=5
+                )
+                
+            if response.status_code == 200:
+                conn_result = response.json()
+                
+                if conn_result.get("connected"):
+                    # CONECTADO - Exibe status positivo
+                    st.success("✅ Conectado ao Docker PostgreSQL")
+                    
+                    col_info1, col_info2, col_info3 = st.columns(3)
+                    with col_info1:
+                        st.metric("Status", "Conectado", delta="Online")
+                    with col_info2:
+                        st.metric("Versão", conn_result.get("version", "N/A"))
+                    with col_info3:
+                        st.metric("Porta", conn_result.get("port", "N/A"))
+                    
+                    st.markdown("---")
+                    
+                    # Lista databases disponíveis
+                    st.subheader("📊 Bases de Dados Disponíveis")
+                    
+                    try:
+                        db_response = requests.get(
+                            f"{API_URL}/api/docker/list-databases",
+                            timeout=10
+                        )
+                        
+                        if db_response.status_code == 200:
+                            db_result = db_response.json()
+                            
+                            if db_result.get("success") and db_result.get("databases"):
+                                databases = db_result["databases"]
+                                
+                                st.caption(f"Encontradas **{len(databases)}** base(s) de dados")
+                                
+                                # Exibe databases como cards selecionáveis
+                                selected_database = None
+                                
+                                for db in databases:
+                                    with st.container():
+                                        col1, col2, col3 = st.columns([3, 2, 1])
+                                        
+                                        with col1:
+                                            st.markdown(f"**📁 {db['name']}**")
+                                        with col2:
+                                            st.caption(f"🗄️ {db['size']}")
+                                        with col3:
+                                            if st.button("Selecionar", key=f"select_{db['name']}", use_container_width=True):
+                                                selected_database = db['name']
+                                        
+                                        st.caption(f"Encoding: {db['encoding']} · Owner: {db['owner']}")
+                                        st.markdown("---")
+                                
+                                # Se selecionou um database, importa estrutura
+                                if selected_database:
+                                    st.info(f"📥 Importando estrutura da base **{selected_database}**...")
+                                    
+                                    try:
+                                        import_response = requests.post(
+                                            f"{API_URL}/api/docker/connect-and-extract",
+                                            json={"database": selected_database},
+                                            timeout=30
+                                        )
+                                        
+                                        if import_response.status_code == 200:
+                                            result = import_response.json()
+                                            
+                                            if result.get("success"):
+                                                st.success(f"✅ Estrutura da base '{selected_database}' importada com sucesso!")
+                                                
+                                                # Exibe resumo
+                                                summary = result.get("summary", {})
+                                                
+                                                col_sum1, col_sum2, col_sum3 = st.columns(3)
+                                                with col_sum1:
+                                                    st.metric("Tabelas", summary.get("total_tables", 0))
+                                                with col_sum2:
+                                                    st.metric("Relacionamentos", summary.get("total_relationships", 0))
+                                                with col_sum3:
+                                                    st.metric("Base", selected_database)
+                                                
+                                                # Atualiza session state
+                                                st.session_state.current_structure = result.get("structure")
+                                                
+                                                # Mostra estrutura importada
+                                                with st.expander("📋 Ver Estrutura Importada"):
+                                                    st.json(result.get("structure"))
+                                                
+                                                st.balloons()
+                                                st.info("💡 Agora você pode ir para '🔍 Visualizar Estrutura' ou '💬 Gerar Query'")
+                                            else:
+                                                st.error(f"❌ {result.get('error', 'Erro ao importar estrutura')}")
+                                        else:
+                                            st.error(f"❌ Erro ao importar: {import_response.status_code}")
+                                            
+                                    except requests.exceptions.Timeout:
+                                        st.error("❌ Timeout: A importação demorou muito")
+                                    except Exception as e:
+                                        st.error(f"❌ Erro: {str(e)}")
+                                
+                            else:
+                                st.warning("⚠️ Nenhuma base de dados encontrada")
+                        else:
+                            st.error("❌ Erro ao listar databases")
+                            
+                    except Exception as e:
+                        st.error(f"❌ Erro ao buscar databases: {str(e)}")
+                
+                else:
+                    # NÃO CONECTADO - Exibe erro
+                    st.error("❌ Não foi possível conectar ao Docker PostgreSQL")
+                    st.warning(conn_result.get("error", "Conexão com o banco de dados não estabelecida! Necessário acionar o suporte da aplicação."))
+                    
+                    with st.expander("ℹ️ Detalhes Técnicos"):
+                        st.code(conn_result.get("details", "Sem detalhes adicionais"))
+                    
+                    st.markdown("---")
+                    st.caption("💡 **Verifique:**")
+                    st.caption("1. Docker Desktop está rodando?")
+                    st.caption("2. Container postgres_rag está ativo?")
+                    st.caption("3. Execute: `docker ps` para verificar")
+            else:
+                st.error("❌ Erro ao testar conexão com Docker")
+                
+        except requests.exceptions.ConnectionError:
+            st.error("❌ Erro de conexão: API não está acessível")
+            st.info("💡 Certifique-se de que a API está rodando em http://localhost:8000")
+        except requests.exceptions.Timeout:
+            st.error("❌ Timeout ao conectar à API")
+        except Exception as e:
+            st.error(f"❌ Erro inesperado: {str(e)}")
+        
+        # Notas
+        st.markdown("---")
+        st.caption("🔒 **Segurança:** Conexão automática com Docker PostgreSQL local")
+        st.caption("📝 **Nota:** A estrutura é extraída em modo somente leitura")
+    
+    # TAB 2: Upload de arquivo texto
+    with tab2:
         st.subheader("Upload de arquivo texto")
         st.markdown("""
         **Formato esperado:**
@@ -72,7 +222,8 @@ def upload_structure_page():
                     except Exception as e:
                         st.error(f"❌ Erro ao processar: {str(e)}")
     
-    with tab2:
+    # TAB 3: Upload de imagem (OCR)
+    with tab3:
         st.subheader("Upload de imagem (OCR)")
         st.info("📸 Faça upload de prints de diagramas ER, DDL, ou estruturas de banco")
         

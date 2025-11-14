@@ -5,12 +5,14 @@ from fastapi import APIRouter, UploadFile, File, HTTPException
 from typing import List, Optional
 from loguru import logger
 
-from src.backend.models import DatabaseStructure
+from src.backend.models import DatabaseStructure, DatabaseConnection, DatabaseConnectionTest
 from src.backend.services.structure_extractor import StructureExtractor
 from src.backend.services.structure_manager import StructureManager
+from src.backend.services.database_inspector import DatabaseInspector
 
 router = APIRouter()
 structure_extractor = StructureExtractor()
+database_inspector = DatabaseInspector()
 
 
 @router.post("/upload-text")
@@ -191,5 +193,76 @@ async def delete_structure(structure_id: str):
         raise HTTPException(
             status_code=500,
             detail=f"Erro ao remover estrutura: {str(e)}"
+        )
+
+
+@router.post("/test-connection", response_model=DatabaseConnectionTest)
+async def test_database_connection(connection: DatabaseConnection):
+    """
+    Testa conexão com banco de dados sem carregar estrutura
+    """
+    try:
+        logger.info(f"Testando conexão com banco: {connection.database} ({connection.db_type})")
+        
+        # Testa conexão
+        inspector = DatabaseInspector()
+        result = inspector.test_connection(
+            db_type=connection.db_type,
+            host=connection.host,
+            port=connection.port,
+            username=connection.username,
+            password=connection.password,
+            database=connection.database,
+            connection_timeout=connection.connection_timeout
+        )
+        
+        if result["success"]:
+            logger.success(f"✅ Teste de conexão bem-sucedido: {connection.database}")
+        else:
+            logger.warning(f"⚠️ Teste de conexão falhou: {result['message']}")
+        
+        return DatabaseConnectionTest(**result)
+        
+    except Exception as e:
+        logger.error(f"Erro ao testar conexão: {e}")
+        return DatabaseConnectionTest(
+            success=False,
+            message=f"Erro ao testar conexão: {str(e)}",
+            error=str(e)
+        )
+
+
+@router.post("/connect-database")
+async def connect_and_load_database(connection: DatabaseConnection):
+    """
+    Conecta a banco de dados existente e carrega sua estrutura
+    """
+    try:
+        logger.info(f"Conectando ao banco: {connection.database} ({connection.db_type})")
+        
+        # Extrai estrutura do banco
+        structure = await structure_extractor.extract_from_database(connection)
+        
+        # Armazena estrutura atual usando StructureManager
+        StructureManager.set_structure(structure)
+        
+        logger.success(f"Estrutura carregada do banco: {len(structure.tables)} tabelas")
+        
+        return {
+            "message": "Estrutura extraída do banco de dados com sucesso",
+            "structure": structure,
+            "summary": {
+                "total_tables": len(structure.tables),
+                "total_relationships": len(structure.relationships),
+                "format": structure.metadata.get("detected_format", "unknown"),
+                "dialect": structure.metadata.get("dialect", "unknown")
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Erro ao conectar e carregar banco de dados: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erro ao conectar ao banco de dados: {str(e)}"
         )
 

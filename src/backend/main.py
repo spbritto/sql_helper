@@ -17,7 +17,7 @@ import uvicorn
 from loguru import logger
 
 from src.backend.config import settings
-from src.backend.routes import query_router, structure_router, health_router
+from src.backend.routes import query_router, structure_router, health_router, docker_router
 
 # Configuração de logs
 logger.add(
@@ -48,6 +48,7 @@ app.add_middleware(
 app.include_router(health_router, prefix="/api", tags=["health"])
 app.include_router(structure_router, prefix="/api/structure", tags=["structure"])
 app.include_router(query_router, prefix="/api/query", tags=["query"])
+app.include_router(docker_router, prefix="/api/docker", tags=["docker"])
 
 
 @app.exception_handler(Exception)

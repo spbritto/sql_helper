@@ -1,0 +1,101 @@
+version: '3.8'
+
+services:
+  # PostgreSQL com pgvector para RAG
+  postgres_rag:
+    image: pgvector/pgvector:pg17
+    container_name: postgres_rag
+    environment:
+      # Configurações do PostgreSQL
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: rag
+      # Configurações de performance
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      # Persistência dos dados
+      - postgres_rag_data:/var/lib/postgresql/data
+      # Script de inicialização (opcional)
+      - ./init-db:/docker-entrypoint-initdb.d
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d rag"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rag_network
+
+  # Backend API
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: assistente-sql-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - DATABASE_URL=postgresql://postgres:postgres@postgres_rag:5432/rag
+    env_file:
+      - .env
+    volumes:
+      - ./src:/app/src
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+    depends_on:
+      postgres_rag:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - rag_network
+
+  # Frontend Streamlit
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: assistente-sql-frontend
+    ports:
+      - "8501:8501"
+    environment:
+      - API_URL=http://backend:8000
+    volumes:
+      - ./src/frontend:/app/src/frontend
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - rag_network
+
+  # PgAdmin (opcional - para administração do banco)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin_rag
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres_rag
+    restart: unless-stopped
+    networks:
+      - rag_network
+
+volumes:
+  postgres_rag_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  rag_network:
+    driver: bridge
+

@@ -33,6 +33,14 @@ class Settings(BaseSettings):
         f"sqlite:///{BASE_DIR}/assistente_sql.db"
     )
     
+    # Docker PostgreSQL (configuração padrão para conexão automática)
+    docker_postgres_host: str = os.getenv("POSTGRES_HOST", "localhost")
+    docker_postgres_port: int = int(os.getenv("POSTGRES_PORT", "5432"))
+    docker_postgres_user: str = os.getenv("POSTGRES_USER", "postgres")
+    docker_postgres_password: str = os.getenv("POSTGRES_PASSWORD", "postgres")
+    docker_postgres_default_db: str = os.getenv("POSTGRES_DEFAULT_DB", "postgres")
+    docker_postgres_db: str = os.getenv("POSTGRES_DB", "rag")
+    
     # OCR
     tesseract_path: Optional[str] = os.getenv("TESSERACT_PATH")
     ocr_language: str = os.getenv("OCR_LANGUAGE", "por")
@@ -68,9 +76,23 @@ class Settings(BaseSettings):
         os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30")
     )
     
+    # Configurações de conexão com banco de dados
+    db_connection_timeout: int = int(os.getenv("DB_CONNECTION_TIMEOUT", "10"))
+    db_connection_max_retries: int = int(os.getenv("DB_CONNECTION_MAX_RETRIES", "3"))
+    db_allowed_hosts: Optional[str] = os.getenv("DB_ALLOWED_HOSTS")  # Lista separada por vírgula
+    db_enable_ssl: bool = os.getenv("DB_ENABLE_SSL", "False").lower() == "true"
+    
+    @property
+    def db_allowed_hosts_list(self) -> Optional[list[str]]:
+        """Retorna lista de hosts permitidos para conexão"""
+        if self.db_allowed_hosts:
+            return [host.strip() for host in self.db_allowed_hosts.split(",")]
+        return None
+    
     class Config:
         env_file = ".env"
         case_sensitive = False
+        extra = "allow"
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

@@ -94,3 +94,34 @@ class HealthResponse(BaseModel):
     timestamp: datetime = Field(default_factory=datetime.now)
     services: Dict[str, str] = Field(default_factory=dict)
 
+
+class DatabaseConnection(BaseModel):
+    """Parâmetros de conexão com banco de dados"""
+    db_type: str = Field(
+        ..., 
+        description="Tipo do banco: mysql, postgresql, sqlite, mssql"
+    )
+    host: str = Field(default="localhost", description="Host do banco de dados")
+    port: Optional[int] = Field(None, description="Porta do banco (usa padrão se não fornecida)")
+    username: str = Field(default="", description="Usuário do banco")
+    password: str = Field(default="", description="Senha do banco")
+    database: str = Field(..., description="Nome do banco de dados")
+    connection_timeout: int = Field(
+        default=10, 
+        ge=1, 
+        le=60, 
+        description="Timeout de conexão em segundos"
+    )
+    additional_params: Optional[Dict[str, str]] = Field(
+        None, 
+        description="Parâmetros adicionais de conexão"
+    )
+
+
+class DatabaseConnectionTest(BaseModel):
+    """Resposta do teste de conexão"""
+    success: bool
+    message: str
+    dialect: Optional[str] = None
+    table_count: Optional[int] = None
+    error: Optional[str] = None

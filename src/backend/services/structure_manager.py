@@ -88,3 +88,6 @@ class StructureManager:
         }
 
 
+# Instância global do gerenciador
+structure_manager = StructureManager()
+

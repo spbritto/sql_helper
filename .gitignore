@@ -8,6 +8,10 @@ build/
 develop-eggs/
 dist/
 downloads/
+database_setup/
+exemplos/
+init-db/
+tests/
 eggs/
 .eggs/
 lib/

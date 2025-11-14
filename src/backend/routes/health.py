@@ -35,7 +35,7 @@ async def root():
     """
     return {
         "message": "Assistente SQL API",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "docs": "/docs",
         "health": "/api/health"
     }
