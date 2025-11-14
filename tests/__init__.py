@@ -1,4 +1,0 @@
-"""
-Testes automatizados
-"""
-
